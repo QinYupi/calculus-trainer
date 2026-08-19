@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>微积分训练器 · 求积又求导，争做小积佬</title>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #0f0f1a;
+            background-image: radial-gradient(ellipse at 20% 20%, rgba(108, 92, 231, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 60%, rgba(0, 206, 201, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 80%, rgba(253, 203, 110, 0.04) 0%, transparent 50%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .app-container { width: 100%; max-width: 850px; display: flex; flex-direction: column; gap: 20px; }
+        .header { text-align: center; padding: 10px 0; }
+        .header .logo { font-size: 2.4rem; font-weight: 800; letter-spacing: -1px; background: linear-gradient(135deg, #a29bfe, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header .subtitle { font-size: 0.9rem; color: #a0a0b8; margin-top: 2px; letter-spacing: 1px; }
+        .header .slogan { font-size: 1.1rem; font-weight: 600; margin-top: 6px; letter-spacing: 2px; background: linear-gradient(135deg, #00cec9, #a29bfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .unified-selector { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; background: #1a1a2e; border-radius: 40px; padding: 6px; border: 1px solid #2a2a45; }
+        .unified-selector button { padding: 10px 16px; border: none; background: transparent; color: #a0a0b8; border-radius: 30px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.25s; white-space: nowrap; }
+        .unified-selector button.active { background: #6c5ce7; color: white; box-shadow: 0 4px 16px rgba(108, 92, 231, 0.5); transform: translateY(-1px); }
+        .unified-selector button:hover:not(.active) { color: #fff; background: rgba(255, 255, 255, 0.05); }
+        .score-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .score-card { background: #1a1a2e; border: 2px solid #2a2a45; border-radius: 12px; padding: 12px 8px; text-align: center; transition: 0.25s; }
+        .score-card.current { border-color: #a29bfe; box-shadow: 0 0 20px rgba(108, 92, 231, 0.3); animation: pulse-border 2s ease-in-out infinite; }
+        @keyframes pulse-border { 0%,100% { border-color: #a29bfe; } 50% { border-color: #00cec9; } }
+        .score-card.winner { border-color: #2ecc71 !important; box-shadow: 0 0 30px rgba(46, 204, 113, 0.6) !important; }
+        .score-card .score-mode { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #a0a0b8; }
+        .score-card .score-diff { font-size: 0.7rem; color: #a0a0b8; margin-bottom: 6px; }
+        .score-card .score-value { font-size: 2rem; font-weight: 800; transition: 0.2s; }
+        .score-value.negative { color: #e74c3c; } .score-value.high { color: #00cec9; } .score-value.win-score { color: #2ecc71; animation: pop 0.4s ease-out; }
+        @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+        .progress-bar-wrap { height: 4px; background: #2a2a45; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 2px; background: #a29bfe; width: 0%; transition: width 0.5s ease; }
+        .score-card.winner .progress-bar-fill { background: #2ecc71; }
+        .question-card { background: #1a1a2e; border: 1px solid #2a2a45; border-radius: 20px; padding: 28px 24px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+        .difficulty-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; background: rgba(46,204,113,0.2); color: #2ecc71; }
+        .question-text { font-size: 1.3rem; font-weight: 600; color: #fff; margin-bottom: 10px; }
+        .question-function { display: inline-block; background: #222240; padding: 16px 28px; border-radius: 12px; font-size: 1.6rem; font-weight: 700; color: #fff; margin: 8px 0; border: 1px solid #2a2a45; }
+        .question-hint { font-size: 0.85rem; color: #a0a0b8; margin-top: 8px; min-height: 20px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 550px) { .options-grid { grid-template-columns: 1fr; } .question-function { font-size: 1.3rem; padding: 12px 20px; } .unified-selector button { padding: 8px 10px; font-size: 0.75rem; } }
+        .option-btn { background: #222240; border: 2px solid #2a2a45; border-radius: 12px; padding: 16px 14px; cursor: pointer; font-size: 1rem; color: #e0e0e0; transition: 0.25s; text-align: center; font-weight: 500; }
+        .option-btn:hover { border-color: #a29bfe; background: #2b2b55; transform: translateY(-2px); color: #fff; }
+        .option-btn.correct { border-color: #2ecc71 !important; background: rgba(46,204,113,0.2) !important; box-shadow: 0 0 25px rgba(46,204,113,0.5); }
+        .option-btn.wrong { border-color: #e74c3c !important; background: rgba(231,76,60,0.25) !important; animation: shake 0.5s; }
+        @keyframes shake { 0%,100%{ transform: translateX(0); } 20%{ transform: translateX(-6px); } 40%{ transform: translateX(6px); } 60%{ transform: translateX(-4px); } 80%{ transform: translateX(4px); } }
+        .option-btn.disabled { pointer-events: none; opacity: 0.7; }
+        .option-btn.show-correct { border-color: #2ecc71 !important; background: rgba(46,204,113,0.15) !important; }
+        .feedback-bar { text-align: center; font-weight: 700; font-size: 1.1rem; min-height: 30px; }
+        .feedback-bar.correct-fb { color: #2ecc71; } .feedback-bar.wrong-fb { color: #e74c3c; }
+        .next-btn { display: block; margin: 0 auto; padding: 14px 40px; border: none; background: #6c5ce7; color: white; font-size: 1rem; font-weight: 700; border-radius: 30px; cursor: pointer; letter-spacing: 0.5px; transition: 0.25s; box-shadow: 0 6px 20px rgba(108,92,231,0.4); }
+        .next-btn:hover { background: #7d6ff0; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(108,92,231,0.6); }
+        .hidden { display: none !important; }
+        .victory-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.75); z-index:100; display:flex; justify-content:center; align-items:center; animation: fade-in 0.3s; }
+        @keyframes fade-in { from{opacity:0} to{opacity:1} }
+        .victory-modal { background: #1a1a2e; border:2px solid #2ecc71; border-radius:20px; padding:36px 28px; text-align:center; max-width:420px; width:90%; box-shadow:0 0 60px rgba(46,204,113,0.5); }
+        .victory-modal .trophy { font-size:4rem; } .victory-modal h2 { color:#2ecc71; margin:10px 0; }
+        .victory-modal button { padding:12px 28px; border:none; background:#2ecc71; color:#000; font-weight:700; border-radius:25px; cursor:pointer; margin:6px; transition:0.2s; }
+        .victory-modal button.secondary { background:transparent; border:2px solid #2a2a45; color:#e0e0e0; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <div class="logo">∫ 微积分训练器</div>
+        <div class="subtitle">CALCULUS TRAINER</div>
+        <div class="slogan">📐 求积又求导，争做小积佬 🔁</div>
+    </div>
+    <div class="unified-selector" id="unifiedSelector">
+        <button data-mode="derivative" data-difficulty="easy" class="active">📐 求导 · 初等</button>
+        <button data-mode="derivative" data-difficulty="medium">📐 求导 · 复合</button>
+        <button data-mode="derivative" data-difficulty="hard">📐 求导 · 隐函数</button>
+        <button data-mode="integral" data-difficulty="easy">🔁 积分 · 初等</button>
+        <button data-mode="integral" data-difficulty="medium">🔁 积分 · 复合</button>
+        <button data-mode="integral" data-difficulty="hard">🔁 积分 · 二重</button>
+    </div>
+    <div class="score-board" id="scoreBoard"></div>
+    <div class="question-card">
+        <div class="difficulty-badge" id="diffBadge">⭐ 初等函数</div>
+        <div class="question-text" id="questionText">求下列函数的导数：</div>
+        <div class="question-function" id="questionFunction">$f(x) = x^2 + 3x$</div>
+        <div class="question-hint" id="questionHint"></div>
+    </div>
+    <div class="options-grid" id="optionsGrid"></div>
+    <div class="feedback-bar" id="feedbackBar"></div>
+    <button class="next-btn hidden" id="nextBtn">下一题 ▶</button>
+</div>
+<div class="victory-overlay hidden" id="victoryOverlay">
+    <div class="victory-modal">
+        <div class="trophy">🏆</div>
+        <h2 id="victoryTitle">太棒了！</h2>
+        <p id="victoryMessage"></p>
+        <button id="victoryContinue">继续挑战</button>
+        <button class="secondary" id="victoryReset">重置此分数</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        function randInt(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
+        function randChoice(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+        function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+        function polyToLatex(terms, variable = 'x') {
+            if (!terms || terms.length === 0) return '0';
+            const sorted = [...terms].sort((a,b) => b.exp - a.exp);
+            let str = ''; let first = true;
+            for (const t of sorted) {
+                if (t.coeff === 0) continue;
+                const abs = Math.abs(t.coeff);
+                const sign = t.coeff >= 0 ? (first ? '' : ' + ') : (first ? '-' : ' - ');
+                let term = '';
+                if (t.exp === 0) term = `${abs}`;
+                else if (abs === 1 && t.exp === 1) term = variable;
+                else if (abs === 1) term = `${variable}^{${t.exp}}`;
+                else if (t.exp === 1) term = `${abs}${variable}`;
+                else term = `${abs}${variable}^{${t.exp}}`;
+                str += sign + term;
+                first = false;
+            }
+            return str || '0';
+        }
+
+        const questionBank = {
+            derivative: {
+                easy: [
+                    function() {
+                        const terms = [], deriv = [], used = new Set();
+                        const n = randInt(2, 3);
+                        for (let i = 0; i < n; i++) {
+                            let e; do { e = randInt(1, 4); } while (used.has(e)); used.add(e);
+                            const c = randChoice([1, 2, 3, 4, 5, -2, -3]);
+                            terms.push({ coeff: c, exp: e });
+                            deriv.push({ coeff: c * e, exp: e - 1 });
+                        }
+                        if (Math.random() < 0.5) {
+                            const c = randInt(-10, 10);
+                            if (c !== 0) terms.push({ coeff: c, exp: 0 });
+                        }
+                        const func = `$f(x) = ${polyToLatex(terms)}$`;
+                        const ans = `$f'(x) = ${polyToLatex(deriv.filter(t => t.coeff !== 0))}$`;
+                        const wrongs = new Set();
+                        let w1 = [...deriv];
+                        if (w1.length > 0) {
+                            w1[0] = { ...w1[0], coeff: w1[0].coeff + randChoice([1, -1, 2]) };
+                            wrongs.add(`$f'(x) = ${polyToLatex(w1.filter(t => t.coeff !== 0))}$`);
+                        }
+                        wrongs.add(`$f'(x) = ${polyToLatex(deriv.filter(t => t.coeff !== 0))} + ${randInt(1,5)}$`);
+                        let w3 = deriv.map(t => ({ ...t, exp: t.exp === 0 ? 1 : t.exp + randChoice([1, -1]) }));
+                        wrongs.add(`$f'(x) = ${polyToLatex(w3.filter(t => t.coeff !== 0))}$`);
+                        const wArr = Array.from(wrongs).filter(w => w !== ans).slice(0, 3);
+                        while (wArr.length < 3) wArr.push(`$f'(x) = ${randInt(2,6)}x$`);
+                        return { text: '求下列函数的导数：', func, ans, wrongs: wArr };
+                    },
+                    function() {
+                        return { text: '求下列函数的导数：', func: '$f(x) = e^x$', ans: "$f'(x) = e^x$", wrongs: ["$f'(x) = x e^x$", "$f'(x) = 1$", "$f'(x) = e^{2x}$"] };
+                    },
+                    function() {
+                        const base = randChoice([2,3,5]);
+                        return { text: '求下列函数的导数：', func: `$f(x) = ${base}^x$`, ans: `$f'(x) = ${base}^x \\ln(${base})$`, wrongs: [`$f'(x) = ${base}^x$`, `$f'(x) = x ${base}^{x-1}$`, `$f'(x) = \\frac{${base}^x}{\\ln(${base})}$`] };
+                    },
+                    function() { return { text: '求下列函数的导数：', func: '$f(x) = \\sin(x)$', ans: "$f'(x) = \\cos(x)$", wrongs: ["$f'(x) = -\\cos(x)$", "$f'(x) = \\sin(x)$", "$f'(x) = \\tan(x)$"] }; },
+                    function() { return { text: '求下列函数的导数：', func: '$f(x) = \\cos(x)$', ans: "$f'(x) = -\\sin(x)$", wrongs: ["$f'(x) = \\sin(x)$", "$f'(x) = \\cos(x)$", "$f'(x) = -\\cos(x)$"] }; },
+                    function() { return { text: '求下列函数的导数：', func: '$f(x) = \\tan(x)$', ans: "$f'(x) = \\sec^2(x)$", wrongs: ["$f'(x) = \\cot(x)$", "$f'(x) = \\csc^2(x)$", "$f'(x) = \\sec(x)\\tan(x)$"] }; },
+                    function() { return { text: '求下列函数的导数：', func: '$f(x) = \\ln(x)$', ans: "$f'(x) = \\frac{1}{x}$", wrongs: ["$f'(x) = x$", "$f'(x) = \\ln(x)$", "$f'(x) = \\frac{1}{\\ln(x)}$"] }; },
+                    function() {
+                        const base = randChoice([2,3,5]);
+                        return { text: '求下列函数的导数：', func: `$f(x) = \\log_{${base}}(x)$`, ans: `$f'(x) = \\frac{1}{x \\ln(${base})}$`, wrongs: [`$f'(x) = \\frac{1}{x}$`, `$f'(x) = \\frac{\\ln(${base})}{x}$`, `$f'(x) = \\frac{1}{x \\log_{${base}}(e)}$`] };
+                    },
+                    function() { return { text: '求下列函数的导数：', func: '$f(x) = \\arcsin(x)$', ans: "$f'(x) = \\frac{1}{\\sqrt{1-x^2}}$", wrongs: ["$f'(x) = \\frac{1}{1+x^2}$", "$f'(x) = -\\frac{1}{\\sqrt{1-x^2}}$", "$f'(x) = \\frac{1}{\\sqrt{x^2-1}}$"] }; },
+                    function() { return { text: '求下列函数的导数：', func: '$f(x) = \\arctan(x)$', ans: "$f'(x) = \\frac{1}{1+x^2}$", wrongs: ["$f'(x) = \\frac{1}{\\sqrt{1-x^2}}$", "$f'(x) = \\frac{x}{1+x^2}$", "$f'(x) = \\arctan(x)$"] }; }
+                ],
+
+
+                medium: [
+                    function() { // x sin(ax)
+                        const a = randChoice([1,2,3]);
+                        const func = `$f(x) = x \\sin(${a===1?'':a}x)$`;
+                        const ans = `$f'(x) = \\sin(${a===1?'':a}x) + ${a===1?'':a}x \\cos(${a===1?'':a}x)$`;
+                        const wrongs = [
+                            `$f'(x) = \\cos(${a===1?'':a}x) + ${a===1?'':a}x \\sin(${a===1?'':a}x)$`,
+                            `$f'(x) = \\sin(${a===1?'':a}x) + ${a===1?'':a}\\cos(${a===1?'':a}x)$`,
+                            `$f'(x) = ${a===1?'':a}x \\cos(${a===1?'':a}x)$`
+                        ];
+                        return { text: '求下列函数的导数（乘积法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // x cos(ax)
+                        const a = randChoice([1,2,3]);
+                        const func = `$f(x) = x \\cos(${a===1?'':a}x)$`;
+                        const ans = `$f'(x) = \\cos(${a===1?'':a}x) - ${a===1?'':a}x \\sin(${a===1?'':a}x)$`;
+                        const wrongs = [
+                            `$f'(x) = -\\sin(${a===1?'':a}x) + ${a===1?'':a}x \\cos(${a===1?'':a}x)$`,
+                            `$f'(x) = \\cos(${a===1?'':a}x) + ${a===1?'':a}x \\sin(${a===1?'':a}x)$`,
+                            `$f'(x) = \\cos(${a===1?'':a}x) - ${a===1?'':a}\\sin(${a===1?'':a}x)$`
+                        ];
+                        return { text: '求下列函数的导数（乘积法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // x e^{ax}
+                        const a = randChoice([1,2,3]);
+                        const func = `$f(x) = x e^{${a===1?'':a}x}$`;
+                        const ans = `$f'(x) = e^{${a===1?'':a}x} + ${a===1?'':a}x e^{${a===1?'':a}x}$`;
+                        const wrongs = [
+                            `$f'(x) = e^{${a===1?'':a}x} + ${a===1?'':a}e^{${a===1?'':a}x}$`,
+                            `$f'(x) = ${a===1?'':a}x e^{${a===1?'':a}x}$`,
+                            `$f'(x) = (1+${a===1?'':a})x e^{${a===1?'':a}x}$`
+                        ];
+                        return { text: '求下列函数的导数（乘积法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // sin(ax) cos(bx) 用乘积法则
+                        const a = randChoice([1,2]), b = randChoice([2,3]);
+                        const func = `$f(x) = \\sin(${a===1?'':a}x) \\cos(${b}x)$`;
+                        const ans = `$f'(x) = ${a===1?'':a}\\cos(${a===1?'':a}x)\\cos(${b}x) - ${b}\\sin(${a===1?'':a}x)\\sin(${b}x)$`;
+                        const wrongs = [
+                            `$f'(x) = ${a===1?'':a}\\cos(${a===1?'':a}x)\\cos(${b}x) + ${b}\\sin(${a===1?'':a}x)\\sin(${b}x)$`,
+                            `$f'(x) = \\cos(${a===1?'':a}x)\\cos(${b}x) - \\sin(${a===1?'':a}x)\\sin(${b}x)$`,
+                            `$f'(x) = ${a===1?'':a}\\cos(${a===1?'':a}x)\\sin(${b}x) - ${b}\\sin(${a===1?'':a}x)\\cos(${b}x)$`
+                        ];
+                        return { text: '求下列函数的导数（乘积法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // x ln(ax)
+                        const a = randChoice([2,3]);
+                        const func = `$f(x) = x \\ln(${a}x)$`;
+                        const ans = `$f'(x) = \\ln(${a}x) + 1$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{x}$`,
+                            `$f'(x) = \\ln(${a}x)$`,
+                            `$f'(x) = \\frac{1}{${a}x}$`
+                        ];
+                        return { text: '求下列函数的导数（乘积法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // e^{ax} sin(bx)
+                        const a = randChoice([1,2]), b = randChoice([2,3]);
+                        const func = `$f(x) = e^{${a===1?'':a}x} \\sin(${b}x)$`;
+                        const ans = `$f'(x) = ${a===1?'':a}e^{${a===1?'':a}x}\\sin(${b}x) + ${b}e^{${a===1?'':a}x}\\cos(${b}x)$`;
+                        const wrongs = [
+                            `$f'(x) = ${a===1?'':a}e^{${a===1?'':a}x}\\cos(${b}x) + ${b}e^{${a===1?'':a}x}\\sin(${b}x)$`,
+                            `$f'(x) = e^{${a===1?'':a}x}\\sin(${b}x) + e^{${a===1?'':a}x}\\cos(${b}x)$`,
+                            `$f'(x) = (${a===1?'':a}+${b})e^{${a===1?'':a}x}\\sin(${b}x)\\cos(${b}x)$`
+                        ];
+                        return { text: '求下列函数的导数（乘积法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // sin(ax) / x (商法则)
+                        const a = randChoice([1,2,3]);
+                        const func = `$f(x) = \\frac{\\sin(${a===1?'':a}x)}{x}$`;
+                        const ans = `$f'(x) = \\frac{${a===1?'':a}x \\cos(${a===1?'':a}x) - \\sin(${a===1?'':a}x)}{x^2}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{${a===1?'':a}\\cos(${a===1?'':a}x) - \\sin(${a===1?'':a}x)}{x^2}$`,
+                            `$f'(x) = \\frac{x \\cos(${a===1?'':a}x) + \\sin(${a===1?'':a}x)}{x^2}$`,
+                            `$f'(x) = \\frac{\\cos(${a===1?'':a}x)}{x}$`
+                        ];
+                        return { text: '求下列函数的导数（商法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // cos(ax) / x
+                        const a = randChoice([1,2,3]);
+                        const func = `$f(x) = \\frac{\\cos(${a===1?'':a}x)}{x}$`;
+                        const ans = `$f'(x) = \\frac{-${a===1?'':a}x \\sin(${a===1?'':a}x) - \\cos(${a===1?'':a}x)}{x^2}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{-${a===1?'':a}\\sin(${a===1?'':a}x) + \\cos(${a===1?'':a}x)}{x^2}$`,
+                            `$f'(x) = \\frac{${a===1?'':a}x \\sin(${a===1?'':a}x) - \\cos(${a===1?'':a}x)}{x^2}$`,
+                            `$f'(x) = \\frac{-\\sin(${a===1?'':a}x)}{x}$`
+                        ];
+                        return { text: '求下列函数的导数（商法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // x / (x^2 + a)
+                        const a = randInt(1,4);
+                        const func = `$f(x) = \\frac{x}{x^2 + ${a}}$`;
+                        const ans = `$f'(x) = \\frac{${a} - x^2}{(x^2 + ${a})^2}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{2x}$`,
+                            `$f'(x) = \\frac{x^2 + ${a} - 2x^2}{(x^2 + ${a})^2}$`,
+                            `$f'(x) = \\frac{x^2 - ${a}}{(x^2 + ${a})^2}$`
+                        ];
+                        return { text: '求下列函数的导数（商法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ln(ax) / x
+                        const a = randChoice([2,3]);
+                        const func = `$f(x) = \\frac{\\ln(${a}x)}{x}$`;
+                        const ans = `$f'(x) = \\frac{1 - \\ln(${a}x)}{x^2}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{\\ln(${a}x) - 1}{x^2}$`,
+                            `$f'(x) = \\frac{1}{x^2}$`,
+                            `$f'(x) = \\frac{1 + \\ln(${a}x)}{x^2}$`
+                        ];
+                        return { text: '求下列函数的导数（商法则）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() {
+                        const a = randChoice([2,3,4]), b = randInt(-3,3), n = randInt(2,4);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const pow = (base, exp) => exp===1 ? base : `${base}^{${exp}}`;
+                        const func = `$f(x) = ${pow(`(${innerDisp})`, n)}$`;
+                        const ans = `$f'(x) = ${a*n ===1 ? '' : a*n}${pow(`(${innerDisp})`, n-1)}$`;
+                        const wrongs = [
+                            `$f'(x) = ${n}${pow(`(${innerDisp})`, n-1)}$`,
+                            `$f'(x) = ${a*n+1}${pow(`(${innerDisp})`, n-1)}$`,
+                            `$f'(x) = ${a*n}${pow(`(${innerDisp})`, n)}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() {
+                        const f = randChoice(['sin','cos']), a = randChoice([2,3,4]), b = randInt(-3,3), coeff = randChoice([1,2,3]);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$f(x) = ${coeff===1?'':coeff}\\${f}(${innerDisp})$`;
+                        const chain = a*coeff;
+                        let ans;
+                        if (f==='sin') ans = `$f'(x) = ${chain===1?'':chain===-1?'-':chain}\\cos(${innerDisp})$`;
+                        else { const abs = Math.abs(chain); const sign = chain>=0?'-':''; ans = `$f'(x) = ${sign}${abs===1?'':abs}\\sin(${innerDisp})$`; }
+                        const wrongs = [
+                            ans.replace(/cos/, 'sin').replace(/sin/, 'cos'),
+                            ans.replace(/\d+/g, m=>parseInt(m)+1),
+                            `$f'(x) = ${chain}\\sin(${innerDisp})$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() {
+                        const a = randChoice([2,3,4]), b = randInt(-3,3), coeff = randChoice([1,2,3]);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$f(x) = ${coeff===1?'':coeff}e^{${innerDisp}}$`;
+                        const chain = a*coeff;
+                        const ans = `$f'(x) = ${chain===1?'':chain}e^{${innerDisp}}$`;
+                        const wrongs = [
+                            `$f'(x) = ${coeff}e^{${innerDisp}}$`,
+                            `$f'(x) = ${chain+1}e^{${innerDisp}}$`,
+                            `$f'(x) = e^{${innerDisp}}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() {
+                        const a = randChoice([2,3,4]), b = randInt(-2,4);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$f(x) = \\ln(${innerDisp})$`;
+                        const ans = `$f'(x) = \\frac{${a}}{${innerDisp}}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{${innerDisp}}$`,
+                            `$f'(x) = \\frac{${a+1}}{${innerDisp}}$`,
+                            `$f'(x) = \\frac{${a}}{x}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // e^{sin(ax+b)}
+                        const a = randChoice([1,2,3]), b = randInt(-2,2);
+                        const inner = `\\sin(${a===1?'':a}x${b!==0?(b>0?'+':'')+b:''})`;
+                        const func = `$f(x) = e^{${inner}}$`;
+                        const chain = `\\cos(${a===1?'':a}x${b!==0?(b>0?'+':'')+b:''})`;
+                        const ans = `$f'(x) = e^{${inner}} \\cdot ${a===1?'':a}${chain}$`;
+                        const wrongs = [
+                            `$f'(x) = e^{${inner}} \\cdot ${chain}$`,
+                            `$f'(x) = e^{${inner}} \\cdot ${a===1?'':a}$`,
+                            `$f'(x) = ${a===1?'':a}e^{${inner}} \\cdot ${chain}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ln(x^k)
+                        const k = randInt(2,4);
+                        const func = `$f(x) = \\ln(x^{${k}})$`;
+                        const ans = `$f'(x) = \\frac{${k}}{x}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{x^{${k}}}$`,
+                            `$f'(x) = \\frac{1}{${k}x}$`,
+                            `$f'(x) = \\frac{${k}}{x^{${k-1}}}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // sin(ae^x)
+                        const a = randChoice([1,2,3]);
+                        const inner = `${a===1?'':a}e^{x}`;
+                        const func = `$f(x) = \\sin(${inner})$`;
+                        const ans = `$f'(x) = \\cos(${inner}) \\cdot ${a===1?'':a}e^{x}$`;
+                        const wrongs = [
+                            `$f'(x) = \\cos(${inner})$`,
+                            `$f'(x) = ${a===1?'':a}e^{x} \\sin(${inner})$`,
+                            `$f'(x) = \\cos(${inner}) \\cdot e^{x}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // cos(ln x)
+                        const func = `$f(x) = \\cos(\\ln x)$`;
+                        const ans = `$f'(x) = -\\sin(\\ln x) \\cdot \\frac{1}{x}$`;
+                        const wrongs = [
+                            `$f'(x) = -\\sin(\\ln x)$`,
+                            `$f'(x) = \\sin(\\ln x) \\cdot \\frac{1}{x}$`,
+                            `$f'(x) = -\\sin(x) \\cdot \\frac{1}{x}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // tan(ax+b)
+                        const a = randChoice([2,3,4]), b = randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$f(x) = \\tan(${innerDisp})$`;
+                        const ans = `$f'(x) = ${a}\\sec^2(${innerDisp})$`;
+                        const wrongs = [
+                            `$f'(x) = \\sec^2(${innerDisp})$`,
+                            `$f'(x) = ${a}\\tan(${innerDisp})$`,
+                            `$f'(x) = ${a}\\cot(${innerDisp})$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // arcsin(ax)
+                        const a = randChoice([2,3,4]);
+                        const func = `$f(x) = \\arcsin(${a===1?'':a}x)$`;
+                        const ans = `$f'(x) = \\frac{${a===1?'':a}}{\\sqrt{1-${a*a===1?'':a*a}x^2}}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{\\sqrt{1-${a*a===1?'':a*a}x^2}}$`,
+                            `$f'(x) = \\frac{${a===1?'':a}}{1+${a*a===1?'':a*a}x^2}$`,
+                            `$f'(x) = \\frac{${a===1?'':a}}{\\sqrt{${a*a===1?'':a*a}x^2-1}}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // arctan(ae^x)
+                        const a = randChoice([1,2,3]);
+                        const inner = `${a===1?'':a}e^{x}`;
+                        const func = `$f(x) = \\arctan(${inner})$`;
+                        const ans = `$f'(x) = \\frac{${a===1?'':a}e^{x}}{1+(${inner})^2}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{1+(${inner})^2}$`,
+                            `$f'(x) = \\frac{${a===1?'':a}e^{x}}{1+x^2}$`,
+                            `$f'(x) = \\frac{e^{x}}{1+(${inner})^2}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // a^{cx+d}
+                        const base = randChoice([2,3,5]), c = randChoice([2,3]), d = randInt(-2,2);
+                        const inner = (c===1?'':c)+'x'+(d>0?'+':'')+(d!==0?d:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$f(x) = ${base}^{${innerDisp}}$`;
+                        const ans = `$f'(x) = ${base}^{${innerDisp}} \\ln(${base}) \\cdot ${c}$`;
+                        const wrongs = [
+                            `$f'(x) = ${base}^{${innerDisp}} \\cdot ${c}$`,
+                            `$f'(x) = ${c} \\cdot ${base}^{${innerDisp}-1}$`,
+                            `$f'(x) = ${base}^{${innerDisp}} \\ln(${base})$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // sin^2 x
+                        const func = `$f(x) = \\sin^2(x)$`;
+                        const ans = `$f'(x) = 2\\sin(x)\\cos(x)$`;
+                        const wrongs = [
+                            `$f'(x) = 2\\sin(x)$`,
+                            `$f'(x) = \\cos^2(x)$`,
+                            `$f'(x) = 2\\cos(x)$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // cos^k x
+                        const k = randInt(2,4);
+                        const func = `$f(x) = \\cos^{${k}}(x)$`;
+                        const ans = `$f'(x) = ${k}\\cos^{${k-1}}(x) \\cdot (-\\sin(x))$`;
+                        const wrongs = [
+                            `$f'(x) = ${k}\\cos^{${k-1}}(x)$`,
+                            `$f'(x) = ${k}\\sin^{${k-1}}(x)$`,
+                            `$f'(x) = -${k}\\cos^{${k-1}}(x) \\cdot \\sin(x)$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // sqrt(ax+b)
+                        const a = randChoice([2,3,4]), b = randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$f(x) = \\sqrt{${innerDisp}}$`;
+                        const ans = `$f'(x) = \\frac{${a}}{2\\sqrt{${innerDisp}}}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{2\\sqrt{${innerDisp}}}$`,
+                            `$f'(x) = \\frac{${a}}{\\sqrt{${innerDisp}}}$`,
+                            `$f'(x) = \\frac{${a}}{2\\sqrt{${a}x+${b}}}$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ln(sin x)
+                        const func = `$f(x) = \\ln(\\sin x)$`;
+                        const ans = `$f'(x) = \\frac{\\cos x}{\\sin x}$`;
+                        const wrongs = [
+                            `$f'(x) = \\frac{1}{\\sin x}$`,
+                            `$f'(x) = \\frac{\\sin x}{\\cos x}$`,
+                            `$f'(x) = \\cot x$`
+                        ];
+                        return { text: '求复合函数的导数：', func, ans, wrongs, hint:'' };
+                    }
+                ],
+                hard: [
+                    function() { // 圆
+                        const r2 = randChoice([4,9,16]);
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func: `$x^2 + y^2 = ${r2}$`, ans: '$\\frac{dy}{dx} = -\\frac{x}{y}$', wrongs: ['$\\frac{dy}{dx} = \\frac{x}{y}$', '$\\frac{dy}{dx} = -\\frac{y}{x}$', '$\\frac{dy}{dx} = \\frac{y}{x}$'], hint:'' };
+                    },
+                    function() { // 椭圆
+                        const a2=randChoice([4,9]), b2=randChoice([4,9]);
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func: `$\\frac{x^2}{${a2}} + \\frac{y^2}{${b2}} = 1$`, ans: `$\\frac{dy}{dx} = -\\frac{${b2}x}{${a2}y}$`, wrongs: [`$\\frac{dy}{dx} = \\frac{${b2}x}{${a2}y}$`, `$\\frac{dy}{dx} = -\\frac{${a2}x}{${b2}y}$`, `$\\frac{dy}{dx} = -\\frac{x}{y}$`], hint:'' };
+                    },
+                    function() { // xy = c
+                        const c=randChoice([1,2,3,6]);
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func: `$xy = ${c}$`, ans: '$\\frac{dy}{dx} = -\\frac{y}{x}$', wrongs: ['$\\frac{dy}{dx} = \\frac{y}{x}$', '$\\frac{dy}{dx} = -\\frac{x}{y}$', '$\\frac{dy}{dx} = \\frac{1}{x}$'], hint:'' };
+                    },
+                    function() { // e^y + x = c
+                        const c=randChoice([1,2,3]);
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func: `$e^y + x = ${c}$`, ans: '$\\frac{dy}{dx} = -\\frac{1}{e^y}$', wrongs: ['$\\frac{dy}{dx} = \\frac{1}{e^y}$', '$\\frac{dy}{dx} = -e^y$', '$\\frac{dy}{dx} = -1$'], hint:'' };
+                    },
+                    function() { // 双曲线
+                        const c = randChoice([1,4,9]);
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func: `$x^2 - y^2 = ${c}$`, ans: '$\\frac{dy}{dx} = \\frac{x}{y}$', wrongs: ['$\\frac{dy}{dx} = -\\frac{x}{y}$', '$\\frac{dy}{dx} = \\frac{y}{x}$', '$\\frac{dy}{dx} = -\\frac{y}{x}$'], hint:'' };
+                    },
+                    function() { // sin(x+y) = x
+                        const func = '$\\sin(x+y) = x$';
+                        const ans = '$\\frac{dy}{dx} = \\frac{1}{\\cos(x+y)} - 1$';
+                        const wrongs = [
+                            '$\\frac{dy}{dx} = \\frac{1}{\\cos(x+y)}$',
+                            '$\\frac{dy}{dx} = \\cos(x+y) - 1$',
+                            '$\\frac{dy}{dx} = \\frac{\\cos(x+y)}{1+\\cos(x+y)}$'
+                        ];
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ln(xy) = x + y
+                        const func = '$\\ln(xy) = x + y$';
+                        const simplified = '$\\frac{dy}{dx} = \\frac{y(1 - x)}{x(y - 1)}$';
+                        const wrongs = [
+                            '$\\frac{dy}{dx} = \\frac{x}{y}$',
+                            '$\\frac{dy}{dx} = \\frac{y}{x}$',
+                            '$\\frac{dy}{dx} = \\frac{x+y}{x-y}$'
+                        ];
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func, ans: simplified, wrongs, hint:'先两边微分，注意 $\\frac{d}{dx}\\ln(xy) = \\frac{1}{x} + \\frac{1}{y}\\frac{dy}{dx}$' };
+                    },
+                    function() { // 笛卡尔叶形线
+                        const a = randChoice([1,2,3]);
+                        const func = `$x^3 + y^3 = ${3*a}xy$`;
+                        const ans = `$\\frac{dy}{dx} = \\frac{${a}y - x^2}{y^2 - ${a}x}$`;
+                        const wrongs = [
+                            `$\\frac{dy}{dx} = \\frac{x^2 - ${a}y}{y^2 - ${a}x}$`,
+                            `$\\frac{dy}{dx} = \\frac{${a}x - y^2}{x^2 - ${a}y}$`,
+                            `$\\frac{dy}{dx} = \\frac{${a}y - x^2}{y^2 + ${a}x}$`
+                        ];
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // e^{xy} = sin(x+y)
+                        const func = '$e^{xy} = \\sin(x+y)$';
+                        const ans = '$\\frac{dy}{dx} = \\frac{\\cos(x+y) - y e^{xy}}{x e^{xy} - \\cos(x+y)}$';
+                        const wrongs = [
+                            '$\\frac{dy}{dx} = \\frac{\\cos(x+y) + y e^{xy}}{x e^{xy} + \\cos(x+y)}$',
+                            '$\\frac{dy}{dx} = \\frac{y e^{xy} - \\cos(x+y)}{\\cos(x+y) - x e^{xy}}$',
+                            '$\\frac{dy}{dx} = \\frac{e^{xy}}{\\cos(x+y)}$'
+                        ];
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // x^y = y^x
+                        const func = '$x^y = y^x$';
+                        const ans = '$\\frac{dy}{dx} = \\frac{y(x\\ln y - y)}{x(y\\ln x - x)}$';
+                        const wrongs = [
+                            '$\\frac{dy}{dx} = \\frac{y\\ln y - y}{x\\ln x - x}$',
+                            '$\\frac{dy}{dx} = \\frac{y}{x}$',
+                            '$\\frac{dy}{dx} = \\frac{\\ln y}{\\ln x}$'
+                        ];
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func, ans, wrongs, hint:'两边取对数：$y \\ln x = x \\ln y$' };
+                    },
+                    function() { // arctan(y/x) = ln(x^2+y^2)
+                        const func = '$\\arctan\\left(\\frac{y}{x}\\right) = \\ln(x^2+y^2)$';
+                        const ans = '$\\frac{dy}{dx} = \\frac{2x + y}{x - 2y}$';
+                        const wrongs = [
+                            '$\\frac{dy}{dx} = \\frac{x+2y}{2x-y}$',
+                            '$\\frac{dy}{dx} = \\frac{y}{x}$',
+                            '$\\frac{dy}{dx} = \\frac{x}{y}$'
+                        ];
+                        return { text: '设 $y$ 是由下列方程确定的隐函数，求 $\\frac{dy}{dx}$：', func, ans, wrongs, hint:'两边对 $x$ 求导，注意 $\\frac{d}{dx}\\arctan(u) = \\frac{u\'}{1+u^2}$' };
+                    }
+                ]
+            }, // ← 这里关闭 derivative 对象，之前缺失导致语法错误
+            integral: {
+                easy: [
+                    function() { // 多项式积分
+                        const terms=[], intTerms=[], used=new Set();
+                        for(let i=0;i<randInt(1,3);i++){
+                            let e; do{e=randInt(0,3)}while(used.has(e)); used.add(e);
+                            const c=randChoice([1,2,3,4,5,-2,-3]);
+                            terms.push({coeff:c,exp:e});
+                            intTerms.push({coeff:c, exp:e+1, denom:e+1});
+                        }
+                        const func = `$\\int (${polyToLatex(terms)}) \\, dx$`;
+                        let s='';
+                        for(const t of intTerms){
+                            if(t.coeff===0)continue;
+                            const num=t.coeff, den=t.denom, abs=Math.abs(num);
+                            const sign=num>=0?(s===''?'':' + '):' - ';
+                            let term = (den===1) ? ((abs===1?'':abs)+'x'+(t.exp>1?`^{${t.exp}}`:'')) : `\\frac{${abs}}{${den}}x^{${t.exp}}`;
+                            s+=sign+term;
+                        }
+                        const ans = `$${s || '0'} + C$`;
+                        // 生成三个迷惑选项，全部以 + C 结尾
+                        const wrongs = [
+                            `$\\frac{${randInt(2,5)}}{${randInt(2,4)}}x^{${randInt(2,4)}} + C$`,
+                            `$x^{${randInt(2,3)}} + C$`,
+                            `$${polyToLatex(terms)} + C$`  // 原函数忘记积分直接加C
+                        ];
+                        // 去重并确保不与答案相同
+                        const filtered = wrongs.filter(w => w !== ans).slice(0,3);
+                        while (filtered.length < 3) filtered.push(`$${randInt(1,5)}x^{${randInt(2,3)}} + C$`);
+                        return { text: '求下列不定积分：', func, ans, wrongs: filtered, hint:'' };
+                    },
+                    function() { // ∫ e^x dx
+                        return { text:'求下列不定积分：', func:'$\\int e^x \\, dx$', ans:'$e^x + C$', wrongs:['$e^{2x} + C$', '$x e^x + C$', '$e^x + 1 + C$'] };
+                    },
+                    function() { // ∫ a^x dx
+                        const base = randChoice([2,3,5]);
+                        const func = `$\\int ${base}^x \\, dx$`;
+                        const ans = `$\\frac{${base}^x}{\\ln ${base}} + C$`;
+                        const wrongs = [
+                            `$${base}^x + C$`,
+                            `$${base}^x \\ln ${base} + C$`,
+                            `$\\frac{x ${base}^{x-1}}{\\ln ${base}} + C$`
+                        ];
+                        return { text:'求下列不定积分：', func, ans, wrongs };
+                    },
+                    function() { // ∫ sin x dx
+                        return { text:'求下列不定积分：', func:'$\\int \\sin x \\, dx$', ans:'$-\\cos x + C$', wrongs:['$\\cos x + C$', '$-\\sin x + C$', '$\\sin x + C$'] };
+                    },
+                    function() { // ∫ cos x dx
+                        return { text:'求下列不定积分：', func:'$\\int \\cos x \\, dx$', ans:'$\\sin x + C$', wrongs:['$-\\sin x + C$', '$\\cos x + C$', '$-\\cos x + C$'] };
+                    },
+                    function() { // ∫ tan x dx
+                        return { text:'求下列不定积分：', func:'$\\int \\tan x \\, dx$', ans:'$-\\ln|\\cos x| + C$', wrongs:['$\\ln|\\sin x| + C$', '$-\\ln|\\sin x| + C$', '$\\sec^2 x + C$'] };
+                    },
+                    function() { // ∫ 1/x dx
+                        return { text:'求下列不定积分：', func:'$\\int \\frac{1}{x} \\, dx$', ans:'$\\ln|x| + C$', wrongs:['$x + C$', '$\\frac{1}{x^2} + C$', '$\\ln x + C$'] };
+                    },
+                    function() { // ∫ 1/√(1-x²) dx
+                        return { text:'求下列不定积分：', func:'$\\int \\frac{1}{\\sqrt{1-x^2}} \\, dx$', ans:'$\\arcsin x + C$', wrongs:['$\\arccos x + C$', '$-\\arcsin x + C$', '$\\arctan x + C$'] };
+                    },
+                    function() { // ∫ 1/(1+x²) dx
+                        return { text:'求下列不定积分：', func:'$\\int \\frac{1}{1+x^2} \\, dx$', ans:'$\\arctan x + C$', wrongs:['$\\arcsin x + C$', '$-\\arctan x + C$', '$\\frac{x}{1+x^2} + C$'] };
+                    },
+                    function() { // ∫ x^n dx (n ≠ -1)
+                        const n=randChoice([-2,-3,2,3]);
+                        const func = `$\\int x^{${n}} \\, dx$`;
+                        let ans;
+                        if(n===-2) ans = '$-\\frac{1}{x} + C$';
+                        else if(n===-3) ans = '$-\\frac{1}{2x^2} + C$';
+                        else ans = `$\\frac{1}{${n+1}}x^{${n+1}} + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${n+2}}x^{${n+1}} + C$`,
+                            `$x^{${n+1}} + C$`,
+                            `$\\frac{1}{${n}}x^{${n-1}} + C$`
+                        ];
+                        return { text:'求下列不定积分：', func, ans, wrongs: wrongs.filter(w=>w!==ans).slice(0,3) };
+                    }
+                ],
+
+
+                medium: [
+                    function() { // ∫ x sin(ax) dx
+                        const a = randChoice([1,2,3]);
+                        const func = `$\\int x \\sin(${a===1?'':a}x) \\, dx$`;
+                        const ans = `$-\\frac{x \\cos(${a===1?'':a}x)}{${a}} + \\frac{\\sin(${a===1?'':a}x)}{${a*a}} + C$`;
+                        const wrongs = [
+                            `$-\\frac{\\cos(${a===1?'':a}x)}{${a}} + C$`,
+                            `$\\frac{x \\sin(${a===1?'':a}x)}{${a}} + C$`,
+                            `$-\\frac{x \\cos(${a===1?'':a}x)}{${a}} + C$`
+                        ];
+                        return { text:'求不定积分（需分部积分）：', func, ans, wrongs, hint:'分部积分：$u=x$, $dv=\\sin(ax)dx$' };
+                    },
+                    function() { // ∫ x cos(ax) dx
+                        const a = randChoice([1,2,3]);
+                        const func = `$\\int x \\cos(${a===1?'':a}x) \\, dx$`;
+                        const ans = `$\\frac{x \\sin(${a===1?'':a}x)}{${a}} + \\frac{\\cos(${a===1?'':a}x)}{${a*a}} + C$`;
+                        const wrongs = [
+                            `$\\frac{\\sin(${a===1?'':a}x)}{${a}} + C$`,
+                            `$-\\frac{x \\cos(${a===1?'':a}x)}{${a}} + C$`,
+                            `$\\frac{x \\sin(${a===1?'':a}x)}{${a}} + C$`
+                        ];
+                        return { text:'求不定积分（需分部积分）：', func, ans, wrongs, hint:'分部积分：$u=x$, $dv=\\cos(ax)dx$' };
+                    },
+                    function() { // ∫ x e^{ax} dx
+                        const a = randChoice([1,2,3]);
+                        const func = `$\\int x e^{${a===1?'':a}x} \\, dx$`;
+                        const ans = `$\\frac{x e^{${a===1?'':a}x}}{${a}} - \\frac{e^{${a===1?'':a}x}}{${a*a}} + C$`;
+                        const wrongs = [
+                            `$\\frac{e^{${a===1?'':a}x}}{${a}} + C$`,
+                            `$\\frac{x e^{${a===1?'':a}x}}{${a}} + C$`,
+                            `$x e^{${a===1?'':a}x} + C$`
+                        ];
+                        return { text:'求不定积分（需分部积分）：', func, ans, wrongs, hint:'分部积分：$u=x$, $dv=e^{ax}dx$' };
+                    },
+                    function() { // ∫ x ln x dx
+                        const func = '$\\int x \\ln x \\, dx$';
+                        const ans = '$\\frac{x^2}{2} \\ln x - \\frac{x^2}{4} + C$';
+                        const wrongs = [
+                            '$x \\ln x - x + C$',
+                            '$\\frac{x^2}{2} \\ln x + C$',
+                            '$\\frac{1}{x} + C$'
+                        ];
+                        return { text:'求不定积分（需分部积分）：', func, ans, wrongs, hint:'分部积分：$u=\\ln x$, $dv=x dx$' };
+                    },
+                    function() { // ∫ ln(ax) dx (作为简单对数补充)
+                        const a = randChoice([2,3,4]);
+                        const func = `$\\int \\ln(${a}x) \\, dx$`;
+                        const ans = `$x \\ln(${a}x) - x + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{x} + C$`,
+                            `$\\frac{\\ln(${a}x)}{${a}} + C$`,
+                            `$x \\ln(${a}x) + C$`
+                        ];
+                        return { text:'求不定积分（需分部积分）：', func, ans, wrongs, hint:'$\\ln(ax) = \\ln a + \\ln x$，或分部积分。' };
+                    },
+                    function() { // ∫ sin(ax+b) dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int \\sin(${innerDisp}) \\, dx$`;
+                        const ans = `$-\\frac{1}{${a}} \\cos(${innerDisp}) + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${a}} \\cos(${innerDisp}) + C$`,
+                            `$-\\cos(${innerDisp}) + C$`,
+                            `$-\\frac{1}{${a}} \\sin(${innerDisp}) + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ cos(ax+b) dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int \\cos(${innerDisp}) \\, dx$`;
+                        const ans = `$\\frac{1}{${a}} \\sin(${innerDisp}) + C$`;
+                        const wrongs = [
+                            `$-\\frac{1}{${a}} \\sin(${innerDisp}) + C$`,
+                            `$\\sin(${innerDisp}) + C$`,
+                            `$\\frac{1}{${a}} \\cos(${innerDisp}) + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ tan(ax+b) dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int \\tan(${innerDisp}) \\, dx$`;
+                        const ans = `$-\\frac{1}{${a}} \\ln|\\cos(${innerDisp})| + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${a}} \\ln|\\cos(${innerDisp})| + C$`,
+                            `$-\\ln|\\cos(${innerDisp})| + C$`,
+                            `$\\frac{1}{${a}} \\tan(${innerDisp}) + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ sec²(ax+b) dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int \\sec^2(${innerDisp}) \\, dx$`;
+                        const ans = `$\\frac{1}{${a}} \\tan(${innerDisp}) + C$`;
+                        const wrongs = [
+                            `$\\tan(${innerDisp}) + C$`,
+                            `$-\\frac{1}{${a}} \\cot(${innerDisp}) + C$`,
+                            `$\\frac{1}{${a}} \\sec(${innerDisp}) + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ e^{ax+b} dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int e^{${innerDisp}} \\, dx$`;
+                        const ans = `$\\frac{1}{${a}} e^{${innerDisp}} + C$`;
+                        const wrongs = [
+                            `$e^{${innerDisp}} + C$`,
+                            `$\\frac{1}{${a+1}} e^{${innerDisp}} + C$`,
+                            `$a e^{${innerDisp}} + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ a^{bx+c} dx
+                        const base=randChoice([2,3,5]), b=randChoice([2,3]), c=randInt(-2,2);
+                        const inner = (b===1?'':b)+'x'+(c>0?'+':'')+(c!==0?c:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int ${base}^{${innerDisp}} \\, dx$`;
+                        const ans = `$\\frac{${base}^{${innerDisp}}}{${b} \\ln ${base}} + C$`;
+                        const wrongs = [
+                            `$${base}^{${innerDisp}} \\ln ${base} + C$`,
+                            `$\\frac{${base}^{${innerDisp}}}{\\ln ${base}} + C$`,
+                            `$\\frac{${base}^{${innerDisp}}}{${b}} + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ 1/(ax+b) dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int \\frac{1}{${innerDisp}} \\, dx$`;
+                        const ans = `$\\frac{1}{${a}} \\ln|${innerDisp}| + C$`;
+                        const wrongs = [
+                            `$\\ln|${innerDisp}| + C$`,
+                            `$\\frac{1}{${a}} \\frac{1}{${innerDisp}} + C$`,
+                            `$-\\frac{1}{${a}} \\ln|${innerDisp}| + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ (ax+b)^n dx (n≠-1)
+                        const a=randChoice([2,3,4]), b=randInt(-3,3), n=randInt(1,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int (${innerDisp})^{${n}} \\, dx$`;
+                        const ans = `$\\frac{1}{${a*(n+1)}} (${innerDisp})^{${n+1}} + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${a}} (${innerDisp})^{${n+1}} + C$`,
+                            `$(${innerDisp})^{${n+1}} + C$`,
+                            `$\\frac{1}{${a*(n+1)}} (${innerDisp})^{${n}} + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ x(x²+c)^n dx
+                        const c=randInt(1,3), n=randInt(2,3);
+                        const func = `$\\int x(x^2+${c})^{${n}} \\, dx$`;
+                        const ans = `$\\frac{1}{${2*(n+1)}} (x^2+${c})^{${n+1}} + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${n+1}} (x^2+${c})^{${n+1}} + C$`,
+                            `$(x^2+${c})^{${n+1}} + C$`,
+                            `$\\frac{1}{${2*(n+1)}} (x^2+${c})^{${n}} + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ 1/√(1-(ax)²) dx
+                        const a=randChoice([2,3]);
+                        const func = `$\\int \\frac{1}{\\sqrt{1-${a*a}x^2}} \\, dx$`;
+                        const ans = `$\\frac{1}{${a}} \\arcsin(${a}x) + C$`;
+                        const wrongs = [
+                            `$\\arcsin(${a}x) + C$`,
+                            `$\\frac{1}{${a}} \\arccos(${a}x) + C$`,
+                            `$\\frac{1}{${a}} \\arctan(${a}x) + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ 1/(1+(ax)²) dx
+                        const a=randChoice([2,3]);
+                        const func = `$\\int \\frac{1}{1+${a*a}x^2} \\, dx$`;
+                        const ans = `$\\frac{1}{${a}} \\arctan(${a}x) + C$`;
+                        const wrongs = [
+                            `$\\arctan(${a}x) + C$`,
+                            `$\\frac{1}{${a}} \\arcsin(${a}x) + C$`,
+                            `$\\frac{1}{${a}} \\frac{1}{1+${a*a}x^2} + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'' };
+                    },
+                    function() { // ∫ ln(ax+b) dx
+                        const a=randChoice([2,3,4]), b=randInt(-3,3);
+                        const inner = (a===1?'':a)+'x'+(b>0?'+':'')+(b!==0?b:'');
+                        const innerDisp = inner==='x'?'x':inner;
+                        const func = `$\\int \\ln(${innerDisp}) \\, dx$`;
+                        const ans = `$\\frac{(${innerDisp})\\ln(${innerDisp}) - ${innerDisp}}{${a}} + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${innerDisp}} + C$`,
+                            `$\\frac{\\ln(${innerDisp})}{${a}} + C$`,
+                            `$(${innerDisp})\\ln(${innerDisp}) - ${innerDisp} + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'使用分部积分或查表：$\\int \\ln u \\, du = u\\ln u - u$。' };
+                    },
+                    function() { // ∫ 1/(1-(ax)²) dx (可通过部分分式或换元)
+                        const a=randChoice([2,3]);
+                        const func = `$\\int \\frac{1}{1-${a*a}x^2} \\, dx$`;
+                        const ans = `$\\frac{1}{${2*a}} \\ln\\left|\\frac{1+${a}x}{1-${a}x}\\right| + C$`;
+                        const wrongs = [
+                            `$\\frac{1}{${a}} \\arctan(${a}x) + C$`,
+                            `$\\frac{1}{${a}} \\arcsin(${a}x) + C$`,
+                            `$\\frac{1}{${a}} \\ln|1-${a*a}x^2| + C$`
+                        ];
+                        return { text:'求不定积分（需换元）：', func, ans, wrongs, hint:'利用部分分式：$\\frac{1}{1-u^2} = \\frac{1}{2}\\left(\\frac{1}{1+u} + \\frac{1}{1-u}\\right)$。' };
+                    }
+                ],
+
+
+hard: [
+                    function() { // 多项式二重积分
+                        const m = randInt(1,2), n = randInt(1,2);
+                        const c1 = randChoice([1,2,3]), c2 = randChoice([1,2,3]);
+                        const func = `$\\iint (${c1}x^{${m}} + ${c2}y^{${n}}) \\, dx \\, dy$`;
+                        const firstX = `${c1===1?'':c1}\\frac{x^{${m+1}}y}{${m+1}} + ${c2===1?'':c2}x\\frac{y^{${n+1}}}{${n+1}}`;
+                        const ans = `$${firstX} + C_1 x + C_2 y + C$`;
+                        const wrongs = [
+                            `$${firstX} + C$`,
+                            `$\\frac{${c1}}{${m+1}}x^{${m+1}} + \\frac{${c2}}{${n+1}}y^{${n+1}} + C$`,
+                            `$${firstX} + C_1 + C_2$`
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分，再对 $y$ 积分，注意常数函数。' };
+                    },
+                    function() { // ∫∫ e^{x+y} dx dy
+                        const func = '$\\iint e^{x+y} \\, dx \\, dy$';
+                        const ans = '$e^{x+y} + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$e^{x+y} + C$',
+                            '$x e^{x+y} + C$',
+                            '$e^{x+y} + C_1 e^x + C_2 e^y + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'$e^{x+y}=e^x e^y$，可直接分离积分。' };
+                    },
+                    function() { // ∫∫ sin(x+y) dx dy
+                        const func = '$\\iint \\sin(x+y) \\, dx \\, dy$';
+                        const ans = '$-\\cos(x+y) + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$\\cos(x+y) + C$',
+                            '$-\\sin(x+y) + C$',
+                            '$-\\cos(x+y) + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分，$\\sin(x+y)$ 视为 $\\sin(u)$，$u=x+y$。' };
+                    },
+                    function() { // ∫∫ sin(xy) dx dy
+                        const func = '$\\iint \\sin(xy) \\, dx \\, dy$';
+                        const ans = '$-\\frac{\\cos(xy)}{y} + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$-\\cos(xy) + C$',
+                            '$-\\frac{\\cos(xy)}{x} + C$',
+                            '$\\frac{\\sin(xy)}{y} + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分，将 $y$ 看作常数：$\\int \\sin(xy) dx = -\\frac{\\cos(xy)}{y}$。' };
+                    },
+                    function() { // ∫∫ x e^{xy} dx dy
+                        const func = '$\\iint x e^{xy} \\, dx \\, dy$';
+                        const ans = '$\\frac{e^{xy}}{y} + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$e^{xy} + C$',
+                            '$\\frac{x e^{xy}}{y} + C$',
+                            '$\\frac{e^{xy}}{x} + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分，使用分部积分或查表：$\\int x e^{xy} dx = \\frac{x e^{xy}}{y} - \\frac{e^{xy}}{y^2}$，但这里给出简化的反导数形式。' };
+                    },
+                    function() { // ∫∫ y sin(xy) dx dy
+                        const func = '$\\iint y \\sin(xy) \\, dx \\, dy$';
+                        const ans = '$-\\cos(xy) + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$y \\cos(xy) + C$',
+                            '$-\\frac{\\cos(xy)}{x} + C$',
+                            '$\\sin(xy) + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分：$\\int y \\sin(xy) dx = -\\cos(xy)$。' };
+                    },
+                    function() { // ∫∫ 1/(x+y) dx dy
+                        const func = '$\\iint \\frac{1}{x+y} \\, dx \\, dy$';
+                        const ans = '$\\ln|x+y| \\cdot x + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$\\ln|x+y| + C$',
+                            '$\\frac{x}{x+y} + C$',
+                            '$\\ln|x+y| \\cdot y + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分：$\\int \\frac{1}{x+y} dx = \\ln|x+y|$，再对 $y$ 积分时需保留 $x$ 的函数。' };
+                    },
+                    function() { // ∫∫ (x+y)^2 dx dy
+                        const func = '$\\iint (x+y)^2 \\, dx \\, dy$';
+                        const ans = '$\\frac{x^3 y}{3} + x^2 y^2 + x y^3 + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$\\frac{x^3}{3} + \\frac{y^3}{3} + C$',
+                            '$\\frac{(x+y)^3}{3} + C$',
+                            '$x^2 y + x y^2 + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'展开 $(x+y)^2 = x^2 + 2xy + y^2$，然后逐项积分。' };
+                    },
+                    function() { // ∫∫ x sin(xy) dx dy
+                        const func = '$\\iint x \\sin(xy) \\, dx \\, dy$';
+                        const ans = '$-\\frac{x \\cos(xy)}{y} + \\frac{\\sin(xy)}{y^2} + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$-\\frac{\\cos(xy)}{y} + C$',
+                            '$\\frac{\\sin(xy)}{y} + C$',
+                            '$-\\frac{\\cos(xy)}{x} + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分，使用分部积分：$\\int x \\sin(ax) dx$ 的公式。' };
+                    },
+                    function() { // ∫∫ e^x sin y dx dy
+                        const func = '$\\iint e^x \\sin y \\, dx \\, dy$';
+                        const ans = '$-e^x \\cos y + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$e^x \\sin y + C$',
+                            '$-e^x \\sin y + C$',
+                            '$e^x \\cos y + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'可分离变量：$\\int e^x dx \\cdot \\int \\sin y dy$。' };
+                    },
+                    function() { // ∫∫ ln(x+y) dx dy
+                        const func = '$\\iint \\ln(x+y) \\, dx \\, dy$';
+                        const ans = '$(x+y)\\ln(x+y) - (x+y) + C_1 x + C_2 y + C$';
+                        const wrongs = [
+                            '$\\frac{1}{x+y} + C$',
+                            '$\\ln(x+y) + C$',
+                            '$x\\ln(x+y) + C$'
+                        ];
+                        return { text:'计算二重不定积分：', func, ans, wrongs: shuffle(wrongs).slice(0,3), hint:'先对 $x$ 积分，使用 $\\int \\ln u \\, du = u\\ln u - u$。' };
+                    }
+                ]
+            }
+        };
+
+        // ==================== 主逻辑 ====================
+        const MODES = ['derivative','integral'];
+        const DIFFS = ['easy','medium','hard'];
+        const DIFF_NAMES = { easy:'初等函数', medium:'复合函数', hard:'高级' };
+        const MODE_NAMES = { derivative:'求导', integral:'不定积分' };
+        const MODE_ICONS = { derivative:'📐', integral:'🔁' };
+        const scoreKeys = []; for (let m of MODES) for (let d of DIFFS) scoreKeys.push(`${m}_${d}`);
+        let scores = {}; scoreKeys.forEach(k => scores[k] = 0);
+        let victoryTriggered = {}; scoreKeys.forEach(k => victoryTriggered[k] = false);
+        let currentMode = 'derivative';
+        let currentDifficulty = 'easy';
+        let currentQuestion = null;
+        let answered = false;
+
+        const unifiedSelector = document.getElementById('unifiedSelector');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const diffBadge = document.getElementById('diffBadge');
+        const questionText = document.getElementById('questionText');
+        const questionFunction = document.getElementById('questionFunction');
+        const questionHint = document.getElementById('questionHint');
+        const optionsGrid = document.getElementById('optionsGrid');
+        const feedbackBar = document.getElementById('feedbackBar');
+        const nextBtn = document.getElementById('nextBtn');
+        const victoryOverlay = document.getElementById('victoryOverlay');
+        const victoryTitle = document.getElementById('victoryTitle');
+        const victoryMessage = document.getElementById('victoryMessage');
+        const victoryContinue = document.getElementById('victoryContinue');
+        const victoryReset = document.getElementById('victoryReset');
+
+        function getScoreKey() { return `${currentMode}_${currentDifficulty}`; }
+        function getScore(k) { return scores[k] || 0; }
+        function setScore(k, v) { scores[k] = Math.max(-999, v); }
+        function addScore(k, d) { setScore(k, getScore(k) + d); }
+        function checkVictory(key) {
+            if (getScore(key) >= 100 && !victoryTriggered[key]) {
+                victoryTriggered[key] = true;
+                const [mode, diff] = key.split('_');
+                const completedCount = Object.values(victoryTriggered).filter(Boolean).length;
+                victoryTitle.textContent = '🏆 恭喜达成！';
+                let msg = `你在【${MODE_ICONS[mode]} ${MODE_NAMES[mode]} - ${DIFF_NAMES[diff]}】中累计 ${getScore(key)} 分！`;
+                msg += `<br><br>将每种类型题刷满100分，可解锁作者战败CG，进度(${completedCount}/6)`;
+                if (completedCount === 6) {
+                    msg += `<br><br><a href="https://www.bilibili.com/video/BV1GJ411x7h7/?spm_id_from=333.337.search-card.all.click&vd_source=58c0fdd31b1a5af2dc0182fbb143cc3d" target="_blank" style="color:#2ecc71; font-weight:700; font-size:1.1rem; text-decoration:underline;">🏆 解锁作者战败CG，点击观看</a>`;
+                }
+                victoryMessage.innerHTML = msg;
+                victoryOverlay.classList.remove('hidden');
+                victoryOverlay.dataset.scoreKey = key;
+            }
+        }
+
+        victoryContinue.addEventListener('click', () => {
+            victoryOverlay.classList.add('hidden');
+            generateNewQuestion();
+        });
+        victoryReset.addEventListener('click', () => {
+            const key = victoryOverlay.dataset.scoreKey;
+            if (key) { setScore(key, 0); victoryTriggered[key] = false; }
+            victoryOverlay.classList.add('hidden');
+            updateScoreBoard();
+            generateNewQuestion();
+        });
+
+        function updateScoreBoard() {
+            const currentKey = getScoreKey();
+            let html = '';
+            for (let m of MODES) for (let d of DIFFS) {
+                const key = `${m}_${d}`;
+                const score = getScore(key);
+                const isCurrent = key === currentKey;
+                const isWinner = victoryTriggered[key];
+                let cls = ''; if (score<0) cls='negative'; else if (score>=80) cls='high';
+                if (isWinner && score>=100) cls='win-score';
+                const w = Math.min(100, Math.max(0, score));
+                html += `<div class="score-card${isCurrent?' current':''}${isWinner?' winner':''}">
+                    <div class="score-mode">${MODE_ICONS[m]} ${MODE_NAMES[m]}</div>
+                    <div class="score-diff">${DIFF_NAMES[d]}</div>
+                    <div class="score-value ${cls}">${score}</div>
+                    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${w}%;"></div></div>
+                    ${isWinner?'<div style="color:#2ecc71;font-size:0.7rem;">🏆 已达成</div>':''}
+                </div>`;
+            }
+            scoreBoard.innerHTML = html;
+        }
+
+        function updateBadge() { diffBadge.textContent = DIFF_NAMES[currentDifficulty]; }
+
+        function generateQuestion() {
+            const generators = questionBank[currentMode][currentDifficulty];
+            if (!generators || generators.length === 0) return null;
+            const gen = randChoice(generators);
+            const data = gen();
+            const opts = shuffle([
+                { text: data.ans, isCorrect: true },
+                ...data.wrongs.map(t => ({ text: t, isCorrect: false }))
+            ]);
+            return {
+                text: data.text,
+                funcDisplay: data.func,
+                options: opts,
+                hint: data.hint || '',
+                correct: data.ans
+            };
+        }
+
+        function renderQuestion() {
+            if (!currentQuestion) return;
+            questionText.textContent = currentQuestion.text;
+            questionFunction.innerHTML = currentQuestion.funcDisplay;
+            questionHint.textContent = currentQuestion.hint || '';
+            updateBadge();
+            const labels = ['A','B','C','D'];
+            optionsGrid.innerHTML = currentQuestion.options.map((opt,i)=>
+                `<button class="option-btn" data-index="${i}" data-correct="${opt.isCorrect}"><strong>${labels[i]}.</strong> ${opt.text}</button>`
+            ).join('');
+            document.querySelectorAll('.option-btn').forEach(b=>b.addEventListener('click', handleOptionClick));
+            MathJax.typesetPromise().catch(console.error);
+        }
+
+        function handleOptionClick(e) {
+            if (answered) return;
+            answered = true;
+            const btn = e.currentTarget;
+            const isCorrect = btn.dataset.correct === 'true';
+            document.querySelectorAll('.option-btn').forEach(b=>{
+                b.classList.add('disabled');
+                if(b.dataset.correct==='true') b.classList.add('show-correct');
+            });
+            const key = getScoreKey();
+            if (isCorrect) {
+                btn.classList.add('correct'); addScore(key, 10);
+                feedbackBar.textContent = '✅ 正确！+10 分'; feedbackBar.className = 'feedback-bar correct-fb';
+            } else {
+                btn.classList.add('wrong'); addScore(key, -30);
+                feedbackBar.textContent = '❌ 错误！-30 分  正确答案已高亮'; feedbackBar.className = 'feedback-bar wrong-fb';
+            }
+            updateScoreBoard(); checkVictory(key); nextBtn.classList.remove('hidden');
+        }
+
+        function generateNewQuestion() {
+            currentQuestion = generateQuestion();
+            answered = false;
+            renderQuestion();
+            feedbackBar.textContent = ''; feedbackBar.className = 'feedback-bar';
+            nextBtn.classList.add('hidden');
+            document.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('correct','wrong','show-correct','disabled'));
+            updateScoreBoard();
+        }
+
+        unifiedSelector.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', ()=>{
+                unifiedSelector.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+                currentDifficulty = btn.dataset.difficulty;
+                generateNewQuestion();
+            });
+        });
+        nextBtn.addEventListener('click', generateNewQuestion);
+        document.addEventListener('keydown', (e) => {
+            if ((e.key==='Enter'||e.key===' '||e.key==='n') && answered) { e.preventDefault(); generateNewQuestion(); }
+            if (!answered && ['1','2','3','4'].includes(e.key)) {
+                const idx = parseInt(e.key)-1;
+                const btn = document.querySelectorAll('.option-btn')[idx];
+                if (btn) btn.click();
+            }
+        });
+
+        // ================== 作者测试通道（在控制台使用） ==================
+        window.__setScoreForTest = (mode, diff, value) => {
+            const key = `${mode}_${diff}`;
+            if (scores.hasOwnProperty(key)) {
+                setScore(key, Math.max(0, value));
+                updateScoreBoard();
+                checkVictory(key);
+                console.log(`已将 ${MODE_ICONS[mode]} ${MODE_NAMES[mode]} - ${DIFF_NAMES[diff]} 分数设为 ${getScore(key)}`);
+            } else {
+                console.error('无效的模式或难度，请使用 derivative/integral 和 easy/medium/hard');
+            }
+        };
+        window.ss = window.__setScoreForTest; // 短命令
+
+        generateNewQuestion();
+        updateScoreBoard();
+    })();
+</script>
+</body>
+</html>
